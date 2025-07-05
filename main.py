@@ -60,13 +60,13 @@ class CustomBaseConverter:
         result = "".join(reversed(res))
         return "-" + result if is_negative else result
 
-    def from_custom_base(self, s: str) -> int:
+    def from_custom_base(self, s: str) -> str:
         if not s:
             raise ValueError("Пустая строка")
         if len(s) > self.MAX_LENGTH:
             raise ValueError(f"Слишком длинное число (максимум {self.MAX_LENGTH} символов)")
         if s == "0":
-            return 0
+            return "0"
 
         is_negative = len(s) > 0 and s[0] == "-"
         if is_negative:
@@ -91,7 +91,8 @@ class CustomBaseConverter:
                     i += 1
                 else:
                     raise ValueError(f"Недопустимый символ: '{char}'")
-        return -n if is_negative else n
+        result = str(-n if is_negative else n)
+        return result
 
 class TreeProcessor:
     def build_tree(self, arr: List[Optional[int]], index=0) -> Optional[Node]:
