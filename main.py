@@ -23,7 +23,7 @@ class EncodeRequest(BaseModel):
 class DecodeRequest(BaseModel):
     encoded: str
 
-Node.update_forward_refs()
+Node.model_rebuild()
 
 class CustomBaseConverter:
     def __init__(self) -> None:
@@ -141,7 +141,7 @@ def create_tree_ascii(request: TreeRequest = Body(...)):
         filtered.sort()
         root = TPr.build_bst(filtered)
     else:
-        root = TPr.build.build_tree(request.values)
+        root = TPr.build_tree(request.values)
     return TPr.ascii_tree(root)
 
 @app.post("/custom-base/encode")
@@ -155,7 +155,7 @@ def custom_encode(request: EncodeRequest):
 def custom_decode(request: DecodeRequest):
     try:
         result = converter.from_custom_base(request.encoded)
-        return {"encoded": request.decimal, "decimal": result}
+        return {"encoded": request.encoded, "decimal": result}
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -187,11 +187,33 @@ def custom_openapi():
     }
 
     openapi_schema["paths"]["/custom-base/encode"]["post"]["requestBody"]["content"]["application/json"]["examples"] = {
-        "decimal": 12543
+        "encode_example1": {
+            "summary": "Кодировка пример номер 1",
+            "value": {
+                "decimal": 12543
+                }
+            },
+        "encode_example2": {
+            "summary": "Кодировка пример номер 2",
+            "value": {
+                "decimal": 192837465
+            }
+        }
     }
 
     openapi_schema["paths"]["/custom-base/decode"]["post"]["requestBody"]["content"]["application/json"]["examples"] = {
-        "encoded" : "*_βλ"
+        "decode_example1": {
+            "summary": "Декодировка пример номер 1",
+            "value": {
+                "encoded": "*_βλ"
+            }
+        },
+        "decode_example2": {
+            "summary": "Декодировка пример номер 2",
+            "value": {
+                "encoded": "#_76_!"
+            }
+        }
     }
 
     app.openapi_schema = openapi_schema
