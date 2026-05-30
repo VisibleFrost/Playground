@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Playground Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #141414; color: #fff; text-align: center; margin: 0; padding: 20px; user-select: none; }
+        .hidden { display: none !important; }
+
+        #auth-screen { max-width: 350px; margin: 100px auto; background: #1e1e1e; padding: 30px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        #auth-screen h2 { margin-top: 0; color: #0077ff; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
+        .input-group input { width: 100%; padding: 10px; background: #2b2b2b; border: 1px solid #444; border-radius: 6px; color: #fff; box-sizing: border-box; }
+        .auth-btn { width: 100%; padding: 12px; background: #0077ff; border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .auth-btn:hover { background: #0055cc; }
+
+        #menu-screen { max-width: 1000px; margin: 40px auto; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 40px; }
+        .card { background: #1e1e1e; border: 2px solid #333; border-radius: 12px; aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; padding: 20px; box-sizing: border-box; }
+        .card:hover { border-color: #0077ff; transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,119,255,0.2); }
+        .card h3 { margin: 10px 0 0 0; font-size: 18px; }
+        .card .icon { font-size: 40px; }
+        .card.maze-card:hover { border-color: #00ff88; box-shadow: 0 10px 20px rgba(0,255,136,0.2); }
+        .card.minigame-card:hover { border-color: #ff4444; box-shadow: 0 10px 20px rgba(255,68,68,0.2); }
+        .card.economy-card:hover { border-color: #ffcc00; box-shadow: 0 10px 20px rgba(255,204,0,0.2); }
+
+        #maze-screen { max-width: 800px; margin: 20px auto; }
+        #maze { display: inline-block; margin-top: 20px; border: 4px solid #444; background: #111; }
+        .row { display: flex; }
+        .cell { width: 20px; height: 20px; }
+        .wall { background-color: #333; }
+        .path { background-color: #111; }
+        .player { background-color: #00ff88; }
+        #controls { margin: 20px; }
+        input, button { padding: 8px; margin: 5px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; }
+        .back-btn { background: #555; border: none; cursor: pointer; padding: 8px 16px; border-radius: 4px; color: #fff; }
+        .back-btn:hover { background: #666; }
+        .start-btn { background: #00ff88; color: #000; font-weight: bold; border: none; cursor: pointer; }
+
+        #minigame-screen { max-width: 800px; margin: 20px auto; text-align: center; }
+        #minigame-canvas { border: 4px solid #333; background: #000; display: block; margin: 20px auto; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        #minigame-stats { background: #1e1e1e; padding: 12px 24px; border-radius: 8px; margin-bottom: 15px; display: inline-block; font-size: 18px; border: 1px solid #333; }
+        .game-btn { padding: 10px 25px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
+        #attack-btn { background: #ff4444; color: #fff; }
+        #attack-btn:hover { background: #cc0000; }
+        #reset-btn { background: #555; color: #fff; }
+
+        .eco-btn { padding: 12px; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; text-align: left; display: flex; justify-content: space-between; }
+        .eco-btn:hover:not(:disabled) { background: #333; border-color: #ffcc00; }
+        .eco-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .card.converter-card:hover { border-color: #bf55ec; box-shadow: 0 10px 20px rgba(191,85,236,0.2); }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <h2 id="auth-title">Вход в систему</h2>
+        <form id="authForm" onsubmit="handleAuth(event)">
+            <div class="input-group">
+                <label>Имя пользователя</label>
+                <input type="text" id="reg-user" required placeholder="Введите имя пользователя...">
+            </div>
+            <div class="input-group">
+                <label>Пароль</label>
+                <input type="password" id="reg-pass" required placeholder="Введите пароль...">
+            </div>
+            <button type="submit" id="auth-submit-btn" class="auth-btn">Войти</button>
+        </form>
+        <p style="margin-top: 15px; font-size: 14px; color: #aaa;">
+            <span id="auth-toggle-text">Нет аккаунта?</span> 
+            <a href="#" id="auth-toggle-link" onclick="toggleAuthMode(event)" style="color: #0077ff; text-decoration: none; font-weight: bold;">Зарегистрироваться</a>
+        </p>
+    </div>
+
+    <div id="menu-screen" class="hidden">
+        <h1>Меню приложений</h1>
+        <div class="grid-container">
+            <div class="card minigame-card" onclick="openApp('minigame')">
+                <div class="icon">⚔️</div>
+                <h3>Боевая мини-игра</h3>
+            </div>
+            <div class="card maze-card" onclick="openApp('maze')">
+                <div class="icon">🧩</div>
+                <h3>Генератор лабиринта</h3>
+            </div>
+            <div class="card economy-card" onclick="openApp('economy')">
+                <div class="icon">📈</div>
+                <h3>Симулятор экономики</h3>
+            </div>
+            <div class="card converter-card" onclick="openApp('converter')">
+                <div class="icon">🧮</div>
+                <h3>Конвертер систем счисления</h3>
+            </div>
+        </div>
+    </div>
+
+    <div id="maze-screen" class="hidden">
+        <button class="back-btn" onclick="openApp('menu')">← Назад</button>
+        <h2>Генератор лабиринта</h2>
+        <div id="controls">
+            Ширина: <input type="number" id="width" value="15" min="5" max="1000">
+            Высота: <input type="number" id="height" value="15" min="5" max="1000">
+            <button class="start-btn" onclick="startMaze()">Сгенерировать</button>
+        </div>
+        <div id="status" style="margin-bottom: 10px;">Готово</div>
+        <div id="maze"></div>
+    </div>
+
+    <div id="minigame-screen" class="hidden">
+        <button class="back-btn" onclick="openApp('menu'); stopGameLoop();">← Вернуться в меню</button>
+        <h2>Боевой симулятор</h2>
+        <div id="minigame-stats">
+            Победы: <span id="wins-count" style="color: #00ff88; font-weight: bold;">0</span> | 
+            Атака: <span id="hero-damage" style="color: #ffcc00; font-weight: bold;">1</span>
+        </div>
+        <div>
+            <button id="attack-btn" class="game-btn" onclick="performAttack()">Атаковать врага ⚔️</button>
+            <button id="reset-btn" class="game-btn" onclick="resetGameServer()">Сбросить прогресс</button>
+        </div>
+        <canvas id="minigame-canvas" width="640" height="440"></canvas>
+        <div id="battle-log-container" style="max-width: 610px; margin: 15px auto; background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #ff4444; text-align: left;">
+            <div id="latest-log" style="color: #ffcc00; font-weight: bold; font-size: 16px; margin-bottom: 10px; min-height: 20px;">
+                ⚔️ Нажми "Атаковать врага", чтобы начать.
+            </div>
+            <div id="log-history" style="font-family: monospace; font-size: 13px; color: #888; height: 90px; overflow-y: auto; border-top: 1px solid #333; padding-top: 8px;">
+                <div>[Система] Ожидание первого удара...</div>
+            </div>
+        </div>
+        <div id="leaderboard-container" style="max-width: 400px; margin: 20px auto; background: #1e1e1e; padding: 15px; border-radius: 8px; border: 1px solid #333;">
+            <h3 style="margin-top: 0; color: #00ff88;">🏆 Топ Игроков</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: monospace;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #444; color: #aaa;">
+                        <th style="padding: 5px;">Место</th>
+                        <th style="padding: 5px;">Логин</th>
+                        <th style="padding: 5px; text-align: right;">Победы</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="economy-screen" class="hidden" style="max-width: 900px; margin: 20px auto; text-align: left;">
+        <button class="back-btn" onclick="openApp('menu'); stopEconomyLoop();" style="margin-bottom: 20px;">← Вернуться в меню</button>
+        
+        <div id="currency-creation-block" class="hidden" style="background: #1e1e1e; padding: 30px; border-radius: 12px; text-align: center; border: 1px solid #ffcc00; margin-bottom: 20px;">
+            <h2>🏦 Регистрация Национальной Валюты</h2>
+            <p style="color: #aaa;">Придумайте имя своей валюты, чтобы выпустить её на торги.</p>
+            <input type="text" id="new-currency-name" placeholder="Например: Доллар" style="padding: 12px; background: #2b2b2b; border: 1px solid #444; border-radius: 6px; color: #fff; width: 260px; margin-right: 10px;">
+            <button onclick="setupUserCurrency()" style="padding: 12px 24px; background: #ffcc00; color: #000; border: none; font-weight: bold; border-radius: 6px; cursor: pointer;">Запустить Эмиссию</button>
+        </div>
+
+    <div id="main-economy-board" class="hidden" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
+            <div style="background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333;">
+                <h2 id="display-currency-name" style="color: #ffcc00; margin-top: 0;">🪙 Валюта: ---</h2>
+                <hr style="border-color: #333; margin: 15px 0;">
+                <p style="font-size: 20px; margin: 10px 0;">Курс валюты: <span id="eco-currency-value" style="color: #00ff88; font-weight: bold; font-family: monospace;">0.000000</span> USD</p>
+                <p style="font-size: 16px; margin: 10px 0;">Доверие инвесторов: <span id="eco-investor-trust" style="color: #00e1ff; font-weight: bold;">1.00</span> / 100</p>
+                
+                <h3 style="margin-top: 25px; color: #aaa; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">📦 Обеспечение фондов</h3>
+                
+                <div style="background: #141414; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                    <strong style="color: #00ff88;">🔋 Ликвидный фонд обеспечения:</strong>
+                    <div style="margin-top: 5px; font-family: monospace; color: #ccc;">
+                        Электричество: <span id="pool-Electricity" style="color: #fff; font-weight: bold;">0</span> | 
+                        Нефть: <span id="pool-Oil" style="color: #fff; font-weight: bold;">0</span>
+                    </div>
+                </div>
+                
+                <div style="background: #141414; padding: 12px; border-radius: 8px;">
+                    <strong style="color: #ffcc00;">🔒 Стратегический резервный фонд:</strong>
+                    <div style="margin-top: 5px; font-family: monospace; color: #ccc;">
+                        Золото: <span id="pool-Gold" style="color: #fff; font-weight: bold;">0</span> | 
+                        Платина: <span id="pool-Platinum" style="color: #fff; font-weight: bold;">0</span> | 
+                        Уран: <span id="pool-Uranium" style="color: #fff; font-weight: bold;">0</span>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 25px; color: #aaa; font-size: 14px; text-transform: uppercase;">📊 Логи Центрального Банка:</h3>
+                <div id="economy-logs" style="height: 150px; overflow-y: auto; background: #0a0a0a; color: #00ff55; font-family: monospace; padding: 10px; text-align: left; border-radius: 6px; border: 1px solid #333; font-size: 12px; line-height: 1.4;">
+                    <div style="color: #555;">[Система] Мониторинг макроэкономических показателей запущен...</div>
+                </div>
+
+                <h3 style="margin-top: 25px; color: #00ff88;">🏆 Мировой Топ Валют</h3>
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: monospace; font-size: 13px;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #444; color: #aaa;">
+                            <th style="padding: 5px;">Государство-эмитент</th>
+                            <th style="padding: 5px;">Валюта</th>
+                            <th style="padding: 5px; text-align: right;">Курс (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="economy-leaderboard-body"></tbody>
+                </table>
+            </div>
+
+            <div style="background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h3 style="margin-top: 0; text-align: center;">⛏️ Поставка сырья в обеспечение</h3>
+                    <p style="color: #888; font-size: 12px; text-align: center; margin-bottom: 20px;">Кнопка блокируется на время добычи.</p>                    
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <button class="eco-btn" id="btn-mine-Electricity" onclick="clickMine('Electricity')"><span>🔋 Электричество</span> <span>1 сек</span></button>
+                        <button class="eco-btn" id="btn-mine-Oil" onclick="clickMine('Oil')"><span>🛢️ Накачать Нефть</span> <span>5 сек</span></button>
+                        <button class="eco-btn" id="btn-mine-Gold" onclick="clickMine('Gold')"><span>🟡 Плавить Золото</span> <span>15 сек</span></button>
+                        <button class="eco-btn" id="btn-mine-Platinum" onclick="clickMine('Platinum')"><span>💍 Ковать Платину</span> <span>22 сек</span></button>
+                        <button class="eco-btn" id="btn-mine-Uranium" onclick="clickMine('Uranium')" style="border-color: #ff3300; background: #2a1111;">
+                            <span style="color: #ff5555;">⚛️ Обогатить Уран</span> <span style="color: #ff5555;">30 сек</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mining-progress-container" style="margin-top: 30px; display: none;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #aaa; margin-bottom: 5px;">
+                        <span>Идет процесс...</span>
+                        <span id="mining-timer-text">0.0s</span>
+                    </div>
+                    <div style="width: 100%; background: #000; height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid #444;">
+                        <div id="mining-progress-bar" style="background: linear-gradient(90deg, #ffcc00, #00ff88); width: 0%; height: 100%; transition: width 0.1s linear;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+    
+    <div id="converter-screen" class="hidden" style="max-width: 500px; margin: 40px auto; background: #1e1e1e; padding: 30px; border-radius: 12px; border: 1px solid #bf55ec; text-align: left;">
+        <button class="back-btn" onclick="openApp('menu')" style="margin-bottom: 20px;">← Вернуться в меню</button>
+        <h2 style="margin-top: 0; color: #bf55ec; text-align: center;">🧮 Кастомный Конвертер</h2>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div class="input-group">
+                <label>Из системы:</label>
+                <input type="number" id="conv-from-base" value="1007" min="2" max="1007">
+            </div>
+            <div class="input-group">
+                <label>В систему:</label>
+                <input type="number" id="conv-to-base" value="2" min="2" max="1007">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Что вставляешь (Значение):</label>
+            <input type="text" id="conv-input-str" placeholder="Например: !1 или 101010">
+        </div>
+
+        <button class="auth-btn" onclick="runConversion()" style="background: #bf55ec; margin-bottom: 20px;">Конвертировать</button>
+
+        <div class="input-group">
+            <label>Что получаешь (Результат):</label>
+            <input type="text" id="conv-output-res" readonly style="background: #141414; border-color: #333; color: #00ff88; font-family: monospace; font-weight: bold;">
+        </div>
+
+        <hr style="border-color: #333; margin: 25px 0;">
+
+        <div class="converter-box" style="margin-top: 30px; border-top: 2px dashed #444; padding-top: 20px;">
+            <h3>Текстовый Процессор (Сжатие текста через базу)</h3>
+    
+            <div class="input-group">
+                <label>Выбери базу для шифрования/дешифрования текста:</label>
+                <input type="number" id="text-base" value="1007" min="2" max="1007">
+            </div>
+
+            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 15px;">
+                <div style="flex: 1; text-align: left;">
+                    <label style="color: #aaa; font-size: 14px;">Обычный текст:</label>
+                    <textarea id="plain-text-input" rows="4" style="width:100%; background:#2b2b2b; color:#fff; border:1px solid #444; border-radius:6px; padding:10px; box-sizing:border-box;" placeholder="Введите понятный текст..."></textarea>
+                    <button class="auth-btn" onclick="encodeText()" style="margin-top: 5px;">Закодировать в систему ➔</button>
+                </div>
+        
+                <div style="flex: 1; text-align: left;">
+                    <label style="color: #aaa; font-size: 14px;">Код в кастомной системе:</label>
+                    <textarea id="cipher-text-input" rows="4" style="width:100%; background:#2b2b2b; color:#fff; border:1px solid #444; border-radius:6px; padding:10px; box-sizing:border-box;" placeholder="Сюда прилетит код или вставь свой..."></textarea>
+                    <button class="auth-btn" onclick="decodeText()" style="margin-top: 5px; background: #00aa55;">🔓 Декодировать в текст</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; text-align: left; background: #1e1e1e; padding: 10px; border-radius: 6px; border: 1px solid #333;">
+                <span style="color: #888; font-size: 13px;">Бинарный слепок (память): </span>
+                <code id="text-binary-debug" style="color: #00ff77; word-break: break-all;">-</code>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = { login: "", password: "" };
+        let isLoginMode = true; 
+        let cellElements = [];
+
+        let gameLoopInterval = null;
+        let isAttacking = false;
+        let attackFrame = 0;
+        let enemyHp = 5;
+        let enemyMaxHp = 5;
+        let showSlime = true;
+        let particles = []; 
+
+        const canvas = document.getElementById('minigame-canvas');
+        const ctx = canvas.getContext('2d');
+        const winsSpan = document.getElementById('wins-count');
+        const damageSpan = document.getElementById('hero-damage');
+
+        let economyInterval = null;
+        let miningActive = false;
+        let lastLoggedMessage = "";
+
+        function toggleAuthMode(event) {
+            event.preventDefault();
+            isLoginMode = !isLoginMode;
+
+            document.getElementById('auth-title').innerText = isLoginMode ? "Вход в аккаунт" : "Регистрация";
+            document.getElementById('auth-submit-btn').innerText = isLoginMode ? "Войти" : "Зарегистрироваться";
+            document.getElementById('auth-toggle-text').innerText = isLoginMode ? "Ещё нет аккаунта?" : "Уже есть аккаунт?";
+            document.getElementById('auth-toggle-link').innerText = isLoginMode ? "Создать" : "Войти";
+        }
+
+        async function handleAuth(event) {
+            event.preventDefault();
+            const username = document.getElementById('reg-user').value;
+            const password = document.getElementById('reg-pass').value;
+            const endpoint = isLoginMode ? '/login' : '/register';
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: username, password: password })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert(`❌ Error: ${errorData.detail || 'Unknown error'}`);
+                    return;
+                }
+                
+                currentUser.login = username;
+                currentUser.password = password;
+
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('menu-screen').classList.remove('hidden');
+            } catch(error) {
+                console.error(error);
+                alert("Не удалось подключиться к серверу");
+            }
+        }
+
+        function openApp(appName) {
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('maze-screen').classList.add('hidden');
+            document.getElementById('minigame-screen').classList.add('hidden');
+            document.getElementById('economy-screen').classList.add('hidden');
+            document.getElementById('converter-screen').classList.add('hidden');
+    
+            if (appName === 'menu') document.getElementById('menu-screen').classList.remove('hidden');
+            if (appName === 'maze') document.getElementById('maze-screen').classList.remove('hidden');
+            if (appName === 'minigame') {
+                document.getElementById('minigame-screen').classList.remove('hidden');
+                startGameLoop();
+            }
+            if (appName === 'economy') {
+                document.getElementById('economy-screen').classList.remove('hidden');
+                startEconomyLoop();
+            }
+            if (appName === 'converter') {
+                document.getElementById('converter-screen').classList.remove('hidden');
+            }
+        }
+
+        async function startMaze() {
+            const width = document.getElementById('width').value;
+            const height = document.getElementById('height').value;
+            const mazeDiv = document.getElementById('maze');
+            const statusDiv = document.getElementById('status');
+            mazeDiv.innerHTML = ''; cellElements = [];
+            statusDiv.innerText = 'Генерируется...';
+            try {
+                const response = await fetch('/maze/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        width: parseInt(width) || 15,
+                        height: parseInt(height) || 15
+                    })
+                });
+                if (!response.ok) throw new Error();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        const data = JSON.parse(line);
+                        statusDiv.innerText = `Статус: ${data.status}`;
+                        if (data.status === 'start') buildInitialGrid(data.matrix);
+                        if (data.status === 'progress') {
+                            const [x, y] = data.step;
+                            if (cellElements[y] && cellElements[y][x]) cellElements[y][x].classList.add('player');
+                        }
+                    }
+                    buffer = lines[lines.length - 1];
+                }
+            } catch (e) {
+                statusDiv.innerText = 'Ошибка загрузки лабиринта';
+            }
+        }
+
+        function buildInitialGrid(matrix) {
+            const mazeDiv = document.getElementById('maze');
+            mazeDiv.innerHTML = ''; cellElements = [];
+            matrix.forEach((row, y) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+                const rowCells = [];
+                row.forEach((cell, x) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+                    cellDiv.classList.add(cell === 1 ? 'wall' : 'path');
+                    rowDiv.appendChild(cellDiv); rowCells.push(cellDiv);
+                });
+                mazeDiv.appendChild(rowDiv); cellElements.push(rowCells);
+            });
+        }
+
+        function startGameLoop() {
+            if (!gameLoopInterval) {
+                updateStatsFromServer();
+                gameLoopInterval = setInterval(gameLoop, 1000 / 60);
+            }
+        }
+
+        function stopGameLoop() {
+            clearInterval(gameLoopInterval);
+            gameLoopInterval = null;
+        }
+
+        async function updateStatsFromServer() {
+            try {
+                const response = await fetch('/mini_game/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: currentUser.login, password: currentUser.password })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    winsSpan.innerText = data.wins;
+                    damageSpan.innerText = data.hero_damage;
+                    enemyHp = data.enemy_hp;
+                    enemyMaxHp = data.enemy_hp_max;
+                    updateLeaderboard(); 
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function updateLeaderboard() {
+            try {
+                const response = await fetch('/mini_game/leaderboard');
+                if (response.ok) {
+                    const topUsers = await response.json();
+                    const tbody = document.getElementById('leaderboard-body');
+                    tbody.innerHTML = '';
+                    topUsers.forEach((user, index) => {
+                        const row = document.createElement('tr');
+                        row.style.borderBottom = '1px solid #2b2b2b';
+                        let medal = index + 1;
+                        if (index === 0) medal = '🥇';
+                        if (index === 1) medal = '🥈';
+                        if (index === 2) medal = '🥉';
+                        row.innerHTML = `
+                            <td style="padding: 6px;">${medal}</td>
+                            <td style="padding: 6px; color: #fff;">${user.login}</td>
+                            <td style="padding: 6px; text-align: right; color: #00ff88; font-weight: bold;">${user.wins}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+            } catch (e) { console.error("Ошибка загрузки топ-15:", e); }
+        }
+
+        async function performAttack() {
+            if (isAttacking) return;
+            isAttacking = true;
+            attackFrame = 0;
+            try {
+                const response = await fetch('/mini_game/attack', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: currentUser.login, password: currentUser.password })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    enemyHp = data.enemy_hp_left;
+                    winsSpan.innerText = data.wins || winsSpan.innerText;
+                    if (data.log) {
+                        const latestLogDiv = document.getElementById('latest-log');
+                        latestLogDiv.innerText = `💥 ${data.log}`;
+                        if (data.log.includes("ЭЛИТНЫЙ")) {
+                            latestLogDiv.style.color = "#bf55ec";
+                        } else if (data.log.includes("Получен атака +1")) {
+                            latestLogDiv.style.color = "#00ff88";
+                        } else {
+                            latestLogDiv.style.color = "#ffcc00";
+                        }
+                        const historyDiv = document.getElementById('log-history');
+                        const newLogEntry = document.createElement('div');
+                        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        newLogEntry.innerText = `[${time}] ${data.log}`;
+                        historyDiv.insertBefore(newLogEntry, historyDiv.firstChild);
+                    }
+                    if (data.enemy_dead) {
+                        createSlimeExplosion();
+                        showSlime = false;
+                        setTimeout(() => {
+                            showSlime = true;
+                            updateStatsFromServer();
+                        }, 800);
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function resetGameServer() {
+            if(confirm("Reset progress?")) {
+                await fetch('/mini_game/reset_profile', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: currentUser.login, password: currentUser.password })
+                });
+                document.getElementById('latest-log').innerText = "🔄 Игра сброшена. Прогресс обнулен.";
+                document.getElementById('latest-log').style.color = "#fff";
+                document.getElementById('log-history').innerHTML = "<div>[Система] База данных очищена, начни заново!</div>";
+                updateStatsFromServer();
+            }
+        }
+
+        function startEconomyLoop() {
+            stopEconomyLoop();
+            updateEconomyStatus();
+            economyInterval = setInterval(updateEconomyStatus, 5000);
+        }
+
+        function stopEconomyLoop() {
+            if (economyInterval) {
+                clearInterval(economyInterval);
+                economyInterval = null;
+            }
+        }
+
+        function pushEconomyLog(message) {
+            if (!message) return;
+
+            if (message.includes("Рынок стабилен") || message === lastLoggedMessage) {
+                return; 
+            }
+            
+            lastLoggedMessage = message;
+            const logBox = document.getElementById('economy-logs');
+            if (logBox) {
+                const entry = document.createElement('div');
+                entry.style.borderBottom = "1px solid #1a1a1a";
+                entry.style.padding = "3px 0";
+
+                if (message.includes("🚨") || message.includes("штраф") || message.includes("Дисбаланс")) {
+                    entry.style.color = "#ff4444";
+                } else if (message.includes("📈") || message.includes("инвестор") || message.includes("начислено")) {
+                    entry.style.color = "#00ff88";
+                }
+
+                entry.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+                logBox.prepend(entry);
+            }
+        }
+
+        function handleEconomyData(data) {
+            if (!data.currency_name) {
+                document.getElementById('currency-creation-block').classList.remove('hidden');
+                document.getElementById('main-economy-board').classList.add('hidden');
+                return;
+            }
+            
+            document.getElementById('currency-creation-block').classList.add('hidden');
+            document.getElementById('main-economy-board').classList.remove('hidden');
+            
+            document.getElementById('display-currency-name').innerText = `🪙 Валюта: ${data.currency_name}`;
+            document.getElementById('eco-currency-value').innerText = data.currency_value.toFixed(6);
+            document.getElementById('eco-investor-trust').innerText = data.investor_trust.toFixed(2);
+
+            if (data.market_event) {
+                pushEconomyLog(data.market_event);
+            }
+            if (data.message) {
+                pushEconomyLog(data.message);
+            }
+
+            for (let res in data.liquid_pool) {
+                const node = document.getElementById(`pool-${res}`);
+                if(node) node.innerText = data.liquid_pool[res];
+            }
+            for (let res in data.reserved_pool) {
+                const node = document.getElementById(`pool-${res}`);
+                if(node) node.innerText = data.reserved_pool[res];
+            }
+
+            updateEconomyLeaderboard();
+        }
+
+        async function updateEconomyStatus() {
+            if (document.getElementById('economy-screen').classList.contains('hidden')) {
+                return;
+            }
+            try {
+                const response = await fetch('/economy/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: currentUser.login, password: currentUser.password })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    handleEconomyData(data);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function setupUserCurrency() {
+            const name = document.getElementById('new-currency-name').value;
+            if(!name) return alert("Введите имя валюты!");
+            
+            try {
+                const response = await fetch('/economy/create-currency', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login: currentUser.login, password: currentUser.password, name: name })
+                });
+                if(response.ok) {
+                    const data = await response.json();
+                    handleEconomyData(data);
+                } else {
+                    const err = await response.json();
+                    alert(err.detail);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function clickMine(resourceName) {
+            if (miningActive) return;
+            miningActive = true;
+
+            let timeSec = 1.0;
+            if(resourceName === "Oil") timeSec = 5.0;
+            if(resourceName === "Gold") timeSec = 15.0;
+            if(resourceName === "Platinum") timeSec = 22.0;
+            if(resourceName === "Uranium") timeSec = 30.0;
+
+            const buttons = document.querySelectorAll('.eco-btn');
+            buttons.forEach(b => b.disabled = true);
+
+            const container = document.getElementById('mining-progress-container');
+            const bar = document.getElementById('mining-progress-bar');
+            const timerText = document.getElementById('mining-timer-text');
+            
+            container.style.display = 'block';
+            bar.style.width = '0%';
+            
+            let start = Date.now();
+            let durationMs = timeSec * 1000;
+
+            let progressInterval = setInterval(() => {
+                let current = Date.now();
+                let diff = current - start;
+                let percent = Math.min(100, (diff / durationMs) * 100);
+                bar.style.width = `${percent}%`;
+                timerText.innerText = `${(Math.max(0, (durationMs - diff)/1000)).toFixed(1)}s`;
+                
+                if(diff >= durationMs) {
+                    clearInterval(progressInterval);
+                }
+            }, 50);
+
+            setTimeout(async () => {
+                try {
+                    const response = await fetch('/economy/complete-mine', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ login: currentUser.login, password: currentUser.password, resource_name: resourceName })
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        handleEconomyData(data);
+                        pushEconomyLog(`Успешно добыто сырье: ${resourceName}`);
+                    } else {
+                        const err = await response.json();
+                        alert(err.detail);
+                    }
+                } catch(e) { console.error(e); }
+                
+                buttons.forEach(b => b.disabled = false);
+                container.style.display = 'none';
+                miningActive = false;
+            }, durationMs + 100);
+        }
+
+        async function updateEconomyLeaderboard() {
+            try {
+                const response = await fetch('/economy/leaderboard');
+                if (response.ok) {
+                    const topCurrencies = await response.json();
+                    const tbody = document.getElementById('economy-leaderboard-body');
+                    tbody.innerHTML = '';
+                    topCurrencies.forEach((c) => {
+                        const row = document.createElement('tr');
+                        row.style.borderBottom = '1px solid #2b2b2b';
+                        row.innerHTML = `
+                            <td style="padding: 5px; color: #888;">${c.login}</td>
+                            <td style="padding: 5px; color: #fff; font-weight: bold;">${c.currency_name}</td>
+                            <td style="padding: 5px; text-align: right; color: #ffcc00;">${c.currency_value.toFixed(12)}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function createSlimeExplosion() {
+            particles = [];
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: canvas.width / 2 + (Math.random() - 0.5) * 100,
+                    y: canvas.height / 2 + 30 + (Math.random() - 0.5) * 50,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12 - 3,
+                    length: Math.random() * 15 + 10,
+                    width: Math.random() * 4 + 2,
+                    alpha: 1
+                });
+            }
+        }
+
+        function gameLoop() {
+            let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGrad.addColorStop(0, '#1a0d1a');
+            bgGrad.addColorStop(1, '#0a050a');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (showSlime) {
+                drawSlimeCode(canvas.width / 2, canvas.height / 2 + 50);
+                drawHpBarCode();
+            } else {
+                drawExplosionCode();
+            }
+            drawSwordCode();
+        }
+
+        function drawSlimeCode(x, y) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x - 90, y);
+            ctx.bezierCurveTo(x - 90, y - 110, x + 90, y - 110, x + 90, y);
+            ctx.quadraticCurveTo(x + 50, y + 20, x, y + 15);
+            ctx.quadraticCurveTo(x - 50, y + 20, x - 90, y);
+            
+            let slimeGrad = ctx.createRadialGradient(x - 20, y - 40, 10, x, y, 90);
+            slimeGrad.addColorStop(0, '#a3ffb4');
+            slimeGrad.addColorStop(0.5, '#26d07c');
+            slimeGrad.addColorStop(1, '#0b6623');
+            ctx.fillStyle = slimeGrad;
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#053311';
+            ctx.stroke();
+
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(x - 30, y - 35, 10, 0, Math.PI * 2);
+            ctx.arc(x + 30, y - 35, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x - 32, y - 38, 3, 0, Math.PI * 2);
+            ctx.arc(x + 28, y - 38, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x - 25, y - 10);
+            ctx.lineTo(x + 25, y - 10);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawHpBarCode() {
+            const barWidth = 240;
+            const barHeight = 22;
+            const x = canvas.width / 2 - barWidth / 2;
+            const y = 80;
+
+            ctx.fillStyle = '#1e1e1e';
+            ctx.fillRect(x - 2, y - 2, barWidth + 4, barHeight + 4);
+            ctx.fillStyle = '#441111';
+            ctx.fillRect(x, y, barWidth, barHeight);
+
+            let hpPercentage = Math.max(0, enemyHp / enemyMaxHp);
+            ctx.fillStyle = '#ff3333';
+            ctx.fillRect(x, y, barWidth * hpPercentage, barHeight);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 13px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${enemyHp} / ${enemyMaxHp} HP`, canvas.width / 2, y + 16);
+        }
+
+        function drawExplosionCode() {
+            particles.forEach((p) => {
+                ctx.save();
+                ctx.strokeStyle = `rgba(38, 208, 124, ${p.alpha})`;
+                ctx.lineWidth = p.width;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x + p.vx * 1.5, p.y + p.vy * 1.5);
+                ctx.stroke();
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2; 
+                p.alpha -= 0.03; 
+                ctx.restore();
+            });
+            particles = particles.filter(p => p.alpha > 0);
+        }
+
+        function drawSwordCode() {
+            ctx.save();
+            let targetX = canvas.width - 140;
+            let targetY = canvas.height - 30;
+            let angle = -Math.PI / 6;
+
+            if (isAttacking) {
+                attackFrame++;
+                if (attackFrame <= 3) { 
+                    targetX += attackFrame * 15;
+                    angle += attackFrame * 0.05;
+                } else if (attackFrame <= 7) { 
+                    targetX -= (attackFrame - 3) * 60;
+                    targetY -= (attackFrame - 3) * 30;
+                    angle -= (attackFrame - 3) * 0.4;
+                } else if (attackFrame <= 12) { 
+                    targetX -= 240;
+                    targetY -= 120;
+                    angle -= 1.6;
+                } else if (attackFrame <= 20) { 
+                    let returnProgress = (attackFrame - 12) / 8;
+                    targetX = (canvas.width - 380) + returnProgress * 240;
+                    targetY = (canvas.height - 150) + returnProgress * 120;
+                    angle = -1.6 + returnProgress * (1.6 - Math.PI / 6);
+                } else {
+                    isAttacking = false;
+                }
+            }
+
+            ctx.translate(targetX, targetY);
+            ctx.rotate(angle);
+
+            ctx.fillStyle = '#3a3a3a';
+            ctx.fillRect(-8, 0, 16, 50); 
+            ctx.fillStyle = '#d4af37';
+            ctx.fillRect(-25, -10, 50, 12); 
+            ctx.beginPath();
+            ctx.arc(0, 52, 10, 0, Math.PI * 2); 
+            ctx.fill();
+
+            let bladeGrad = ctx.createLinearGradient(-12, -200, 12, -200);
+            bladeGrad.addColorStop(0, '#00bfff');
+            bladeGrad.addColorStop(0.5, '#ffffff'); 
+            bladeGrad.addColorStop(1, '#00bfff');
+            
+            ctx.fillStyle = bladeGrad;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00ffff'; 
+
+            ctx.beginPath();
+            ctx.moveTo(-10, -10);
+            ctx.lineTo(-10, -210);
+            ctx.lineTo(0, -240); 
+            ctx.lineTo(10, -210);
+            ctx.lineTo(10, -10);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        async function runConversion() {
+            const inputStr = document.getElementById('conv-input-str').value;
+            const fromBase = document.getElementById('conv-from-base').value;
+            const toBase = document.getElementById('conv-to-base').value;
+
+            if (!inputStr) return alert("Введи значение для перевода!");
+
+            try {
+                const response = await fetch('/converter/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        number_str: inputStr,
+                        from_base: parseInt(fromBase, 10),
+                        to_base: parseInt(toBase, 10)
+                    })
+                });
+                const data = await response.json();
+                if (response.ok && data.status === "success") {
+                    document.getElementById('conv-output-res').value = data.result;
+                } else {
+                    alert("Ошибка бэка: " + (data.detail || "Неизвестная ошибка"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Не удалось связаться с сервером.");
+            }
+        }
+
+        async function encodeText() {
+            const plainText = document.getElementById('plain-text-input').value;
+            const base = document.getElementById('text-base').value;
+            if (!plainText) return alert("Введи обычный текст!");
+
+            try {
+                const response = await fetch('/converter/from-text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ input_text: plainText, to_base: parseInt(base, 10) })
+                });
+                const data = await response.json();
+                if (response.ok && data.status === "success") {
+                    document.getElementById('cipher-text-input').value = data.result;
+                    document.getElementById('text-binary-debug').innerText = data.binary;
+                } else {
+                    alert("Ошибка: " + (data.detail || "Неизвестная ошибка"));
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function decodeText() {
+            const cipherText = document.getElementById('cipher-text-input').value;
+            const base = document.getElementById('text-base').value;
+            if (!cipherText) return alert("Вставь закодированный текст/код!");
+
+            try {
+                const response = await fetch('/converter/to-text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ number_str: cipherText, from_base: parseInt(base, 10) })
+                });
+                const data = await response.json();
+                if (response.ok && data.status === "success") {
+                    document.getElementById('plain-text-input').value = data.text;
+                    document.getElementById('text-binary-debug').innerText = data.binary;
+                } else {
+                    alert("Ошибка: " + (data.detail || "Неизвестная ошибка"));
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>
